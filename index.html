@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>电脑管理工作台</title>
+<style>
+  :root {
+    --bg: #050507;
+    --surface: #0c0c10;
+    --surface-2: #111116;
+    --line: rgba(244, 241, 234, 0.08);
+    --line-strong: rgba(201, 161, 63, 0.35);
+    --ink: #f4f1ea;
+    --ink-dim: #8a8780;
+    --ink-faint: #56544f;
+    --gold: #c9a13f;
+    --gold-soft: rgba(201, 161, 63, 0.12);
+    --radius: 14px;
+    --serif: Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(1100px 620px at 50% -12%, rgba(201, 161, 63, 0.06), transparent 62%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    padding: 40px 24px 72px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header.top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 30px;
+  }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand-art { flex: none; }
+  .brand-art svg { display: block; animation: floatY 6s ease-in-out infinite; }
+  .brand h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 27px;
+    letter-spacing: 0.22em;
+    text-indent: 0.22em;
+  }
+  .brand .sub {
+    margin-top: 8px;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+  .clock { text-align: right; }
+  .clock .date { font-size: 13px; color: var(--ink-dim); letter-spacing: 0.08em; }
+  .clock .next { margin-top: 6px; font-size: 12.5px; color: var(--gold); letter-spacing: 0.05em; }
+
+  /* ---------- overview ---------- */
+  .overview {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr 1fr;
+    grid-template-areas:
+      "tasks ring soon"
+      "tasks streak soon";
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .card {
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+  }
+  .card h2 {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .card h2 .tag { font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.12em; }
+
+  /* tasks */
+  .card.tasks { grid-area: tasks; display: flex; flex-direction: column; }
+  .task-list { list-style: none; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .task {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  .task:last-child { border-bottom: none; }
+  .box {
+    flex: none;
+    width: 19px; height: 19px;
+    border: 1px solid rgba(244, 241, 234, 0.28);
+    border-radius: 5px;
+    display: grid;
+    place-items: center;
+    transition: all 0.18s ease;
+  }
+  .box svg { width: 11px; height: 11px; opacity: 0; transition: opacity 0.18s ease; }
+  .task.done .box { background: var(--gold); border-color: var(--gold); }
+  .task.done .box svg { opacity: 1; }
+  .task .label {
+    flex: 1;
+    outline: none;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: color 0.2s ease;
+  }
+  .task .label:focus { background: rgba(244, 241, 234, 0.05); }
+  .task.done .label { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: rgba(244,241,234,0.3); }
+  .task-progress { margin-top: 14px; font-size: 12px; color: var(--ink-dim); letter-spacing: 0.08em; }
+
+  /* ring / countdown */
+  .card.ring { grid-area: ring; display: flex; flex-direction: column; }
+  .ring-body { display: flex; align-items: center; gap: 20px; flex: 1; }
+  .ring-svg { flex: none; }
+  .ring-svg .track { stroke: rgba(244, 241, 234, 0.09); }
+  .ring-svg .bar { stroke: var(--gold); transition: stroke-dashoffset 0.6s cubic-bezier(.2,.7,.2,1); }
+  .ring-svg .pct {
+    font-family: var(--serif);
+    font-size: 22px;
+    fill: var(--ink);
+  }
+  .ring-info .big {
+    font-family: var(--serif);
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+  }
+  .ring-info .muted { font-size: 12px; color: var(--ink-dim); margin-top: 6px; letter-spacing: 0.06em; }
+
+  /* streak */
+  .card.streak { grid-area: streak; display: flex; flex-direction: column; justify-content: center; }
+  .streak-num {
+    font-family: var(--serif);
+    font-size: 46px;
+    line-height: 1;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+  }
+  .streak-num small { font-size: 16px; color: var(--ink-dim); margin-left: 8px; letter-spacing: 0.1em; }
+  .streak-cap { font-size: 12.5px; color: var(--ink-dim); margin-top: 10px; letter-spacing: 0.06em; }
+
+  /* soon */
+  .card.soon { grid-area: soon; display: flex; flex-direction: column; }
+  .soon-list { list-style: none; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .soon-item { display: flex; gap: 12px; align-items: baseline; }
+  .soon-item .d {
+    flex: none;
+    width: 46px;
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+  }
+  .soon-item .t { font-size: 13.5px; color: var(--ink); }
+  .soon-item .t .ty { color: var(--ink-faint); font-size: 11.5px; margin-left: 6px; }
+  .empty { color: var(--ink-faint); font-size: 13px; letter-spacing: 0.04em; }
+
+  /* ---------- illustrated empty states ---------- */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 3px;
+    padding: 20px 10px 14px;
+    min-height: 148px;
+  }
+  .empty-state svg { display: block; animation: floatY 5.5s ease-in-out infinite; }
+  .empty-state .es-text { margin-top: 10px; font-size: 13px; color: var(--ink-dim); letter-spacing: 0.05em; }
+  .empty-state .es-sub { font-size: 11.5px; color: var(--ink-faint); letter-spacing: 0.08em; }
+
+  @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes dotPulse { 0%, 80%, 100% { opacity: 0.22; transform: translateY(0); } 45% { opacity: 1; transform: translateY(-3px); } }
+  .fdot { animation: dotPulse 1.7s ease-in-out infinite; }
+  .fdot.d2 { animation-delay: 0.22s; }
+  .fdot.d3 { animation-delay: 0.44s; }
+  @keyframes dashDraw { to { stroke-dashoffset: 0; } }
+  .check-draw { stroke-dasharray: 34; stroke-dashoffset: 34; animation: dashDraw 1s ease 0.25s forwards; }
+  @keyframes sparkPulse { 0%, 100% { opacity: 0.3; transform: rotate(0deg); } 50% { opacity: 1; transform: rotate(22deg); } }
+  .spark { animation: sparkPulse 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .spark.spark2 { animation-delay: 1.2s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .empty-state svg, .fdot, .check-draw, .spark { animation: none !important; }
+  }
+
+  /* ---------- boards ---------- */
+  .boards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .board { display: flex; flex-direction: column; }
+  .board .card-title {
+    font-family: var(--serif);
+    font-size: 16px;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .board .card-sub { font-size: 11.5px; color: var(--ink-faint); letter-spacing: 0.1em; margin-bottom: 18px; }
+  .board-head { display: flex; align-items: flex-start; justify-content: space-between; }
+
+  /* goal items */
+  .goal-items { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .goal-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .goal-item:last-child { border-bottom: none; }
+  .goal-item .idx {
+    flex: none; width: 20px;
+    font-family: var(--serif); font-size: 12px; color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .goal-item .label { flex: 1; font-size: 13.5px; }
+  .goal-item.done .box { background: var(--gold); border-color: var(--gold); }
+  .goal-item.done .box svg { opacity: 1; }
+  .goal-item.done .label { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: rgba(244,241,234,0.3); }
+
+  /* checklist */
+  .clist { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+  .cl-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-date {
+    flex: none; width: 52px;
+    font-family: var(--serif); font-size: 12.5px; color: var(--ink-dim);
+    letter-spacing: 0.02em; padding-top: 1px;
+  }
+  .cl-main { flex: 1; min-width: 0; }
+  .cl-title { font-size: 13.5px; outline: none; border-radius: 4px; padding: 1px 3px; }
+  .cl-title:focus { background: rgba(244,241,234,0.05); }
+  .cl-type {
+    display: inline-block; margin-top: 6px;
+    font-size: 10.5px; letter-spacing: 0.12em;
+    color: var(--gold); background: var(--gold-soft);
+    border: 1px solid rgba(201,161,63,0.22);
+    padding: 1px 8px; border-radius: 999px;
+  }
+  .cl-item.overdue .cl-date { color: #d98c6a; }
+  .cl-del {
+    flex: none; background: none; border: none; color: var(--ink-faint);
+    cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; border-radius: 5px;
+    opacity: 0; transition: opacity 0.18s ease, color 0.18s ease;
+  }
+  .cl-item:hover .cl-del { opacity: 1; }
+  .cl-del:hover { color: #d98c6a; }
+
+  .add-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .add-row input {
+    background: rgba(244, 241, 234, 0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    padding: 8px 10px;
+    outline: none;
+  }
+  .add-row input::placeholder { color: var(--ink-faint); }
+  .add-row input.d { width: 118px; flex: none; }
+  .add-row input.t { flex: 1; min-width: 90px; }
+  .add-row input:focus { border-color: var(--line-strong); }
+  .btn {
+    background: var(--gold-soft);
+    border: 1px solid rgba(201,161,63,0.3);
+    color: var(--gold);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    letter-spacing: 0.06em;
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  .btn:hover { background: rgba(201,161,63,0.2); }
+
+  /* habits */
+  .habits { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .habit {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 15px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color 0.2s ease;
+  }
+  .habit.done-today { border-color: var(--line-strong); background: rgba(201,161,63,0.04); }
+  .habit-main { flex: 1; min-width: 0; }
+  .habit-name { font-size: 13.5px; }
+  .habit-meta { font-size: 11.5px; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.05em; }
+  .habit-meta .streak { color: var(--gold); }
+  .habit-btn {
+    flex: none;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(244,241,234,0.22);
+    background: none;
+    color: transparent;
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: all 0.18s ease;
+  }
+  .habit-btn svg { width: 13px; height: 13px; }
+  .habit-btn:hover { border-color: var(--gold); }
+  .habit.done-today .habit-btn { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+
+  footer.foot {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.12em;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- disk space ---------- */
+  .card.disk { margin-bottom: 16px; }
+  .disk-top { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+  .disk-donut { flex: none; }
+  .disk-donut .track { stroke: rgba(244, 241, 234, 0.07); }
+  .disk-donut .seg { transition: stroke-dasharray 0.6s ease, stroke-dashoffset 0.6s ease; }
+  .disk-donut .center-num { font-family: var(--serif); font-size: 27px; fill: var(--ink); }
+  .disk-donut .center-cap { font-size: 10px; fill: var(--ink-dim); letter-spacing: 0.2em; }
+
+  .disk-legend {
+    flex: 1;
+    min-width: 230px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 11px 26px;
+  }
+  .leg { display: flex; align-items: center; gap: 9px; font-size: 13px; min-width: 0; }
+  .leg .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .leg .nm { color: var(--ink-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .leg .vl {
+    font-family: var(--serif);
+    color: var(--ink);
+    outline: none;
+    border-radius: 4px;
+    padding: 1px 4px;
+    white-space: nowrap;
+  }
+  .leg .vl:focus { background: rgba(244, 241, 234, 0.07); }
+
+  .disk-bar {
+    display: flex;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 22px;
+    background: rgba(244, 241, 234, 0.07);
+  }
+  .disk-bar span { display: block; height: 100%; transition: width 0.6s ease; }
+
+  .disk-foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 13px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    letter-spacing: 0.04em;
+  }
+  .disk-foot .vl {
+    font-family: var(--serif);
+    color: var(--ink);
+    outline: none;
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+  .disk-foot .vl:focus { background: rgba(244, 241, 234, 0.07); }
+  .disk-warn { color: #d98c6a; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 900px) {
+    body { padding: 26px 15px 56px; }
+    .overview {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "tasks tasks"
+        "ring streak"
+        "soon soon";
+    }
+    .boards { grid-template-columns: 1fr; }
+    .brand h1 { font-size: 23px; letter-spacing: 0.16em; text-indent: 0.16em; }
+    .brand-art svg { width: 64px; height: 50px; }
+    .clock { text-align: left; }
+  }
+  @media (max-width: 520px) {
+    .overview { grid-template-columns: 1fr; grid-template-areas: "tasks" "ring" "streak" "soon"; }
+    .cl-date { width: 46px; font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-art" aria-hidden="true">
+        <svg viewBox="0 0 96 76" width="84" height="66" fill="none">
+          <rect x="12" y="8" width="72" height="48" rx="9" fill="rgba(201,161,63,0.08)"/>
+          <rect x="25" y="18" width="46" height="28" rx="4" stroke="rgba(244,241,234,0.5)" stroke-width="1.8"/>
+          <path class="check-draw" d="M39 32l5 5 11-13" stroke="#c9a13f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M42 58v5M54 58v5M35 63h26" stroke="rgba(244,241,234,0.42)" stroke-width="1.8" stroke-linecap="round"/>
+          <circle class="fdot" cx="86" cy="20" r="2.3" fill="#c9a13f"/>
+          <circle class="fdot d2" cx="89" cy="31" r="1.8" fill="#c9a13f"/>
+        </svg>
+      </div>
+      <div>
+        <h1>电脑管理工作台</h1>
+        <div class="sub">Disk &amp; Memory Care</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="date" id="today">—</div>
+      <div class="next" id="maintainHint">—</div>
+    </div>
+  </header>
+
+  <section class="card disk">
+    <h2><span>磁盘空间</span><span class="tag">点击数字可改</span></h2>
+    <div class="disk-top">
+      <svg class="disk-donut" viewBox="0 0 120 120" width="130" height="130" aria-hidden="true">
+        <g transform="rotate(-90 60 60)">
+          <circle class="track" cx="60" cy="60" r="50" fill="none" stroke-width="14" />
+          <g id="donutSegs"></g>
+        </g>
+        <text class="center-num" id="diskPct" x="60" y="63" text-anchor="middle">0%</text>
+        <text class="center-cap" id="diskCap" x="60" y="80" text-anchor="middle">已用</text>
+      </svg>
+      <div class="disk-legend" id="diskLegend"></div>
+    </div>
+    <div class="disk-bar" id="diskBar"></div>
+    <div class="disk-foot">
+      <span id="diskFree"></span>
+      <span id="diskNote"></span>
+    </div>
+  </section>
+
+  <section class="overview">
+    <div class="card tasks">
+      <h2><span>今天最重要的三件事</span><span class="tag">可勾选 · 可编辑</span></h2>
+      <ul class="task-list" id="taskList"></ul>
+      <div class="task-progress" id="taskProgress"></div>
+    </div>
+
+    <div class="card ring">
+      <h2><span>内存冲刺</span><span class="tag" id="ringCount"></span></h2>
+      <div class="ring-body">
+        <svg class="ring-svg" viewBox="0 0 120 120" width="120" height="120">
+          <circle class="track" cx="60" cy="60" r="50" fill="none" stroke-width="8" />
+          <circle class="bar" id="ringBar" cx="60" cy="60" r="50" fill="none" stroke-width="8"
+                  stroke-linecap="round" transform="rotate(-90 60 60)"
+                  stroke-dasharray="314.16" stroke-dashoffset="314.16" />
+          <text class="pct" id="ringPct" x="60" y="67" text-anchor="middle">0%</text>
+        </svg>
+        <div class="ring-info">
+          <div class="big" id="ringTarget">每月 1 日</div>
+          <div class="muted" id="ringCountdown">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card streak">
+      <h2><span>连续打卡</span></h2>
+      <div class="streak-num" id="streakNum">0<small>天</small></div>
+      <div class="streak-cap" id="streakCap">每天关机前关后台程序</div>
+    </div>
+
+    <div class="card soon">
+      <h2><span>未来 7 天</span><span class="tag" id="soonCount"></span></h2>
+      <ul class="soon-list" id="soonList"></ul>
+    </div>
+  </section>
+
+  <section class="boards">
+    <div class="card board">
+      <div class="board-head">
+        <div>
+          <div class="card-title">内存冲刺</div>
+          <div class="card-sub">每月一次 · 电脑内存与磁盘</div>
+        </div>
+      </div>
+      <ul class="goal-items" id="goalItems"></ul>
+    </div>
+
+    <div class="card board">
+      <div class="board-head">
+        <div>
+          <div class="card-title">维护清单</div>
+          <div class="card-sub">最近要做的维护</div>
+        </div>
+      </div>
+      <ul class="clist" id="clist"></ul>
+      <div class="add-row">
+        <input class="d" id="newDate" type="date" />
+        <input class="t" id="newTitle" type="text" placeholder="要做什么…" />
+        <button class="btn" id="addBtn">添加</button>
+      </div>
+    </div>
+
+    <div class="card board">
+      <div class="board-head">
+        <div>
+          <div class="card-title">好习惯</div>
+          <div class="card-sub">坚持 · 打卡</div>
+        </div>
+      </div>
+      <ul class="habits" id="habits"></ul>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>数据保存在本机浏览器 · 无需联网</span>
+    <span id="resetBtn" style="cursor:pointer">清空并恢复默认</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LS_KEY = "pcwb.v1";
+  var MAINT_DAY = 1; // 每月维护日
+
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  var CHECK_DARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  /* ---------- 插画（空状态 · 深色线稿风） ---------- */
+  var ART_FOLDER =
+    '<svg viewBox="0 0 140 104" width="136" height="100" fill="none" aria-hidden="true">' +
+    '<rect x="26" y="14" width="88" height="74" rx="12" fill="rgba(201,161,63,0.08)"/>' +
+    '<path d="M44 40h15l7 8h29a5 5 0 0 1 5 5v18a5 5 0 0 1-5 5H44a5 5 0 0 1-5-5V45a5 5 0 0 1 5-5z" stroke="rgba(244,241,234,0.55)" stroke-width="2" stroke-linejoin="round"/>' +
+    '<circle class="fdot" cx="58" cy="65" r="2.8" fill="#c9a13f"/>' +
+    '<circle class="fdot d2" cx="70" cy="65" r="2.8" fill="#c9a13f"/>' +
+    '<circle class="fdot d3" cx="82" cy="65" r="2.8" fill="#c9a13f"/>' +
+    '</svg>';
+
+  var ART_RELAX =
+    '<svg viewBox="0 0 140 104" width="136" height="100" fill="none" aria-hidden="true">' +
+    '<rect x="26" y="14" width="88" height="74" rx="12" fill="rgba(201,161,63,0.08)"/>' +
+    '<rect x="42" y="28" width="56" height="38" rx="6" stroke="rgba(244,241,234,0.55)" stroke-width="2"/>' +
+    '<path class="check-draw" d="M60 47l6 6 14-16" stroke="#c9a13f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M62 76h16" stroke="rgba(244,241,234,0.55)" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M70 66v10" stroke="rgba(244,241,234,0.32)" stroke-width="2" stroke-linecap="round"/>' +
+    '<g class="spark"><path d="M106 26v9M101.5 30.5h9" stroke="#c9a13f" stroke-width="1.6" stroke-linecap="round"/></g>' +
+    '<g class="spark spark2"><path d="M34 72v7M30.5 75.5h7" stroke="rgba(244,241,234,0.4)" stroke-width="1.5" stroke-linecap="round"/></g>' +
+    '</svg>';
+
+  function emptyState(art, text, sub) {
+    return '<div class="empty-state">' + art +
+      '<div class="es-text">' + text + '</div>' +
+      (sub ? '<div class="es-sub">' + sub + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ---------- 磁盘分类（颜色沿用深色仪表盘调性） ---------- */
+  var DISK_CATS = [
+    { key: "系统与软件", color: "#c9a13f" },
+    { key: "文档", color: "#e0cf9e" },
+    { key: "照片 / 视频", color: "#a89b7c" },
+    { key: "下载", color: "#7d8f7a" },
+    { key: "其他", color: "#6a675f" }
+  ];
+  var DISK_ALERT_PCT = 85;
+  var AUTO_TASK_TITLE = "磁盘空间告急：清理大文件与下载";
+
+  /* ---------- helpers ---------- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function todayStr() { return ymd(new Date()); }
+  function uid() { return Math.random().toString(36).slice(2, 9); }
+  function parseDate(s) {
+    var p = s.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  var WEEK_CN = ["日", "一", "二", "三", "四", "五", "六"];
+
+  /* ---------- state ---------- */
+  function defaults() {
+    return {
+      taskDate: todayStr(),
+      tasks: {
+        labels: ["清空下载文件夹", "关掉多余的后台程序", "备份今天要留的文件"],
+        done: [false, false, false]
+      },
+      goalItems: [
+        { name: "系统盘空间清理", done: false },
+        { name: "下载 + 桌面整理", done: false },
+        { name: "大文件与重复文件", done: false },
+        { name: "重要资料备份", done: false }
+      ],
+      checklist: [
+        { id: uid(), date: "2026-10-11", title: "清空下载文件夹、整理桌面", type: "例行维护" },
+        { id: uid(), date: "2026-10-12", title: "关机前关掉多余后台程序", type: "日常" },
+        { id: uid(), date: "2026-10-18", title: "重要资料备份到移动硬盘", type: "备份" },
+        { id: uid(), date: "2026-11-01", title: "全面清理（运行内存 + 磁盘）", type: "月度维护" }
+      ],
+      habits: [
+        { id: uid(), name: "每月 1 次全面清理", period: "month", done: [] },
+        { id: uid(), name: "每周清桌面 + 下载", period: "week", done: [] },
+        { id: uid(), name: "每天关机前关后台程序", period: "day", done: [] }
+      ],
+      disk: {
+        total: 512,
+        used: { "系统与软件": 148, "文档": 74, "照片 / 视频": 102, "下载": 46, "其他": 22 },
+        autoAdded: false
+      }
+    };
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return defaults();
+      var s = JSON.parse(raw);
+      var d = defaults();
+      // 合并，避免旧数据缺字段
+      s.tasks = s.tasks || d.tasks;
+      s.goalItems = s.goalItems || d.goalItems;
+      s.checklist = s.checklist || d.checklist;
+      s.habits = s.habits || d.habits;
+      s.disk = s.disk || d.disk;
+      return s;
+    } catch (e) { return defaults(); }
+  }
+
+  var state = load();
+
+  // 跨天：重置今日三件事的勾选
+  if (state.taskDate !== todayStr()) {
+    state.taskDate = todayStr();
+    state.tasks.done = state.tasks.done.map(function () { return false; });
+  }
+
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  /* ---------- period / streak ---------- */
+  function periodKey(d, period) {
+    if (period === "day") return ymd(d);
+    if (period === "month") return d.getFullYear() + "-" + pad(d.getMonth() + 1);
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var dow = (t.getDay() + 6) % 7; // Monday = 0
+    t.setDate(t.getDate() - dow);
+    return ymd(t);
+  }
+  function prevPeriod(d, period) {
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (period === "day") t.setDate(t.getDate() - 1);
+    else if (period === "week") t.setDate(t.getDate() - 7);
+    else t.setMonth(t.getMonth() - 1);
+    return t;
+  }
+  function streakOf(habit) {
+    var set = {};
+    habit.done.forEach(function (k) { set[k] = true; });
+    var d = new Date();
+    if (!set[periodKey(d, habit.period)]) {
+      d = prevPeriod(d, habit.period);
+      if (!set[periodKey(d, habit.period)]) return 0;
+    }
+    var n = 0;
+    while (set[periodKey(d, habit.period)]) {
+      n++;
+      d = prevPeriod(d, habit.period);
+    }
+    return n;
+  }
+  function periodUnit(p) { return p === "day" ? "天" : p === "week" ? "周" : "个月"; }
+
+  /* ---------- maintenance countdown ---------- */
+  function nextMaintenance() {
+    var now = new Date();
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (t.getDate() === MAINT_DAY) return t;
+    return new Date(now.getFullYear(), now.getMonth() + 1, MAINT_DAY);
+  }
+  function daysUntil(target) {
+    var now = new Date();
+    var t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((target - t) / 86400000);
+  }
+
+  /* ---------- render ---------- */
+  function renderHeader() {
+    var now = new Date();
+    document.getElementById("today").textContent =
+      now.getFullYear() + " 年 " + (now.getMonth() + 1) + " 月 " + now.getDate() + " 日 · 周" + WEEK_CN[now.getDay()];
+    var nm = nextMaintenance();
+    var dd = daysUntil(nm);
+    var hint = dd === 0 ? "今天就是维护日" : "距下次维护（" + (nm.getMonth() + 1) + " 月 " + nm.getDate() + " 日）还有 " + dd + " 天";
+    document.getElementById("maintainHint").textContent = hint;
+  }
+
+  function renderTasks() {
+    var ul = document.getElementById("taskList");
+    ul.innerHTML = "";
+    state.tasks.labels.forEach(function (txt, i) {
+      var li = document.createElement("li");
+      li.className = "task" + (state.tasks.done[i] ? " done" : "");
+      li.innerHTML = '<span class="box">' + CHECK + '</span>';
+      var lab = document.createElement("span");
+      lab.className = "label";
+      lab.contentEditable = "true";
+      lab.spellcheck = false;
+      lab.textContent = txt;
+      lab.addEventListener("blur", function () {
+        state.tasks.labels[i] = lab.textContent.trim() || txt;
+        save();
+      });
+      lab.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); lab.blur(); }
+      });
+      lab.addEventListener("click", function (e) { e.stopPropagation(); });
+      li.appendChild(lab);
+      li.addEventListener("click", function () {
+        state.tasks.done[i] = !state.tasks.done[i];
+        save();
+        renderTasks();
+      });
+      ul.appendChild(li);
+    });
+    var n = state.tasks.done.filter(Boolean).length;
+    document.getElementById("taskProgress").textContent = "已完成 " + n + " / 3";
+  }
+
+  function renderRing() {
+    var items = state.goalItems;
+    var done = items.filter(function (x) { return x.done; }).length;
+    var pct = Math.round((done / items.length) * 100);
+    var C = 2 * Math.PI * 50;
+    var bar = document.getElementById("ringBar");
+    bar.setAttribute("stroke-dasharray", C.toFixed(2));
+    bar.setAttribute("stroke-dashoffset", (C * (1 - pct / 100)).toFixed(2));
+    document.getElementById("ringPct").textContent = pct + "%";
+    document.getElementById("ringCount").textContent = done + " / " + items.length + " 项";
+    var nm = nextMaintenance();
+    document.getElementById("ringTarget").textContent = "每月 " + MAINT_DAY + " 日 · " + (nm.getMonth() + 1) + "/" + nm.getDate();
+    var dd = daysUntil(nm);
+    document.getElementById("ringCountdown").textContent = dd === 0 ? "今天清一次" : "还有 " + dd + " 天";
+  }
+
+  function renderGoal() {
+    var ul = document.getElementById("goalItems");
+    ul.innerHTML = "";
+    state.goalItems.forEach(function (it, i) {
+      var li = document.createElement("li");
+      li.className = "goal-item" + (it.done ? " done" : "");
+      li.innerHTML = '<span class="idx">' + pad(i + 1) + '</span><span class="box">' + CHECK + '</span>';
+      var lab = document.createElement("span");
+      lab.className = "label";
+      lab.textContent = it.name;
+      li.appendChild(lab);
+      li.addEventListener("click", function () {
+        it.done = !it.done; save(); renderGoal(); renderRing();
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function renderChecklist() {
+    var ul = document.getElementById("clist");
+    ul.innerHTML = "";
+    var list = state.checklist.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+    var tk = todayStr();
+    if (!list.length) {
+      ul.innerHTML = '<li>' + emptyState(ART_FOLDER, "还没有要维护的事", "在下面添加第一件") + '</li>';
+      return;
+    }
+    list.forEach(function (item) {
+      var li = document.createElement("li");
+      li.className = "cl-item" + (item.date < tk ? " overdue" : "");
+      var dt = document.createElement("span");
+      dt.className = "cl-date";
+      var p = item.date.split("-");
+      dt.textContent = p[1] + "/" + p[2];
+      var main = document.createElement("div");
+      main.className = "cl-main";
+      var title = document.createElement("div");
+      title.className = "cl-title";
+      title.contentEditable = "true";
+      title.spellcheck = false;
+      title.textContent = item.title;
+      title.addEventListener("blur", function () {
+        item.title = title.textContent.trim() || item.title; save();
+      });
+      title.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); title.blur(); }
+      });
+      var ty = document.createElement("span");
+      ty.className = "cl-type";
+      ty.textContent = item.type;
+      main.appendChild(title);
+      main.appendChild(ty);
+      var del = document.createElement("button");
+      del.className = "cl-del";
+      del.textContent = "×";
+      del.title = "删除";
+      del.addEventListener("click", function () {
+        state.checklist = state.checklist.filter(function (x) { return x.id !== item.id; });
+        save(); renderChecklist(); renderSoon();
+      });
+      li.appendChild(dt); li.appendChild(main); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderSoon() {
+    var ul = document.getElementById("soonList");
+    ul.innerHTML = "";
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var end = new Date(start); end.setDate(end.getDate() + 7);
+    var items = state.checklist.filter(function (it) {
+      var d = parseDate(it.date);
+      return d >= start && d <= end;
+    }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+
+    document.getElementById("soonCount").textContent = items.length + " 件";
+    if (!items.length) {
+      ul.innerHTML = '<li>' + emptyState(ART_RELAX, "未来 7 天没有安排", "安心用电脑，维护日再回来") + '</li>';
+      return;
+    }
+    items.forEach(function (it) {
+      var d = parseDate(it.date);
+      var dd = daysUntil(d);
+      var li = document.createElement("li");
+      li.className = "soon-item";
+      var when = dd <= 0 ? "今天" : dd === 1 ? "明天" : (d.getMonth() + 1) + "/" + d.getDate();
+      li.innerHTML = '<span class="d">' + when + '</span><span class="t"></span>';
+      var t = li.querySelector(".t");
+      t.textContent = it.title;
+      var ty = document.createElement("span");
+      ty.className = "ty";
+      ty.textContent = it.type;
+      t.appendChild(ty);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderHabits() {
+    var ul = document.getElementById("habits");
+    ul.innerHTML = "";
+    state.habits.forEach(function (h) {
+      var key = periodKey(new Date(), h.period);
+      var doneToday = h.done.indexOf(key) !== -1;
+      var li = document.createElement("li");
+      li.className = "habit" + (doneToday ? " done-today" : "");
+      var main = document.createElement("div");
+      main.className = "habit-main";
+      var nm = document.createElement("div");
+      nm.className = "habit-name";
+      nm.textContent = h.name;
+      var meta = document.createElement("div");
+      meta.className = "habit-meta";
+      var s = streakOf(h);
+      meta.innerHTML = '连续 <span class="streak">' + s + '</span> ' + periodUnit(h.period) +
+        ' ｜ 累计 ' + h.done.length + ' 次';
+      main.appendChild(nm); main.appendChild(meta);
+      var btn = document.createElement("button");
+      btn.className = "habit-btn";
+      btn.innerHTML = CHECK_DARK;
+      btn.title = doneToday ? "取消本次打卡" : "打卡";
+      btn.addEventListener("click", function () {
+        var idx = h.done.indexOf(key);
+        if (idx === -1) h.done.push(key); else h.done.splice(idx, 1);
+        save(); renderHabits(); renderStreak();
+      });
+      li.appendChild(main); li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderStreak() {
+    var dayHabit = null;
+    for (var i = 0; i < state.habits.length; i++) {
+      if (state.habits[i].period === "day") { dayHabit = state.habits[i]; break; }
+    }
+    var val = dayHabit ? streakOf(dayHabit) : 0;
+    document.getElementById("streakNum").innerHTML = val + "<small>天</small>";
+    document.getElementById("streakCap").textContent = dayHabit ? dayHabit.name : "还没有每天坚持的习惯";
+  }
+
+  function renderDisk() {
+    var d = state.disk;
+    var total = +d.total || 1;
+    var usedSum = 0;
+    DISK_CATS.forEach(function (c) { usedSum += (+d.used[c.key] || 0); });
+    var free = Math.max(total - usedSum, 0);
+    var pctUsed = Math.min(Math.round((usedSum / total) * 100), 100);
+
+    // donut segments
+    var R = 50, C = 2 * Math.PI * R, off = 0, segs = "";
+    DISK_CATS.forEach(function (c) {
+      var v = +d.used[c.key] || 0;
+      var len = Math.min(v / total, 1) * C;
+      if (len <= 0) return;
+      var draw = len > 5 ? len - 2 : len;
+      segs += '<circle class="seg" cx="60" cy="60" r="50" fill="none" stroke="' + c.color +
+        '" stroke-width="14" stroke-dasharray="' + draw.toFixed(2) + ' ' + (C - draw).toFixed(2) +
+        '" stroke-dashoffset="' + (-off).toFixed(2) + '"/>';
+      off += len;
+    });
+    document.getElementById("donutSegs").innerHTML = segs;
+    document.getElementById("diskPct").textContent = pctUsed + "%";
+
+    // legend
+    var lg = document.getElementById("diskLegend");
+    lg.innerHTML = "";
+    DISK_CATS.forEach(function (c) {
+      var row = document.createElement("div");
+      row.className = "leg";
+      row.innerHTML = '<span class="sw" style="background:' + c.color + '"></span>';
+      var nm = document.createElement("span");
+      nm.className = "nm";
+      nm.textContent = c.key;
+      var vl = document.createElement("span");
+      vl.className = "vl";
+      vl.contentEditable = "true";
+      vl.spellcheck = false;
+      vl.textContent = (+d.used[c.key] || 0) + " GB";
+      vl.addEventListener("blur", function () {
+        var n = parseFloat(vl.textContent.replace(/[^\d.]/g, ""));
+        if (isNaN(n) || n < 0) n = +d.used[c.key] || 0;
+        d.used[c.key] = Math.round(n);
+        save(); renderDisk();
+      });
+      vl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); vl.blur(); }
+      });
+      row.appendChild(nm); row.appendChild(vl);
+      lg.appendChild(row);
+    });
+    var fRow = document.createElement("div");
+    fRow.className = "leg";
+    fRow.innerHTML = '<span class="sw" style="background:rgba(244,241,234,0.14)"></span>';
+    var fnm = document.createElement("span");
+    fnm.className = "nm";
+    fnm.textContent = "可用空间";
+    var fvl = document.createElement("span");
+    fvl.className = "vl";
+    fvl.textContent = free + " GB";
+    fRow.appendChild(fnm); fRow.appendChild(fvl);
+    lg.appendChild(fRow);
+
+    // bar
+    var bar = document.getElementById("diskBar");
+    bar.innerHTML = "";
+    DISK_CATS.forEach(function (c) {
+      var v = +d.used[c.key] || 0;
+      if (v <= 0) return;
+      var s = document.createElement("span");
+      s.style.width = (v / total * 100) + "%";
+      s.style.background = c.color;
+      bar.appendChild(s);
+    });
+
+    // foot
+    var footEl = document.getElementById("diskFree");
+    footEl.innerHTML = '已用 <b style="color:var(--ink)">' + usedSum + ' GB</b>　｜　可用 ' + free +
+      ' GB　｜　共 <span class="vl" id="diskTotal" contenteditable="true" spellcheck="false">' + total + ' GB</span>';
+    var tEl = document.getElementById("diskTotal");
+    tEl.addEventListener("blur", function () {
+      var n = parseInt(tEl.textContent.replace(/[^\d]/g, ""), 10);
+      if (isNaN(n) || n < 1) n = total;
+      state.disk.total = n; save(); renderDisk();
+    });
+    tEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); tEl.blur(); }
+    });
+
+    // 联动：已用超阈值时自动往维护清单塞一条清理任务（每个告警周期只加一次）
+    var autoAddedNow = false;
+    if (pctUsed >= DISK_ALERT_PCT && !d.autoAdded) {
+      var exists = state.checklist.some(function (x) { return x.title === AUTO_TASK_TITLE; });
+      if (!exists) {
+        state.checklist.push({ id: uid(), date: todayStr(), title: AUTO_TASK_TITLE, type: "空间告急" });
+        autoAddedNow = true;
+      }
+      d.autoAdded = true;
+      save();
+    } else if (pctUsed < DISK_ALERT_PCT && d.autoAdded) {
+      d.autoAdded = false;
+      save();
+    }
+
+    var note = document.getElementById("diskNote");
+    if (pctUsed >= DISK_ALERT_PCT) {
+      note.textContent = autoAddedNow ? "已自动加入维护清单" : "空间告急，尽快安排一次清理";
+      note.className = "disk-warn";
+    } else if (pctUsed >= 70) {
+      note.textContent = "该安排一次清理了";
+      note.className = "disk-warn";
+    } else {
+      note.textContent = "空间还算充裕";
+      note.className = "";
+    }
+
+    if (autoAddedNow) { renderChecklist(); renderSoon(); }
+  }
+
+  function renderAll() {
+    renderHeader(); renderDisk(); renderTasks(); renderRing(); renderGoal();
+    renderChecklist(); renderSoon(); renderHabits(); renderStreak();
+  }
+
+  /* ---------- events ---------- */
+  document.getElementById("addBtn").addEventListener("click", function () {
+    var dEl = document.getElementById("newDate");
+    var tEl = document.getElementById("newTitle");
+    var date = dEl.value || todayStr();
+    var title = tEl.value.trim();
+    if (!title) { tEl.focus(); return; }
+    state.checklist.push({ id: uid(), date: date, title: title, type: "维护" });
+    tEl.value = ""; dEl.value = "";
+    save(); renderChecklist(); renderSoon();
+  });
+  document.getElementById("newTitle").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("addBtn").click();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    if (window.confirm("确定清空所有数据、恢复默认内容吗？")) {
+      state = defaults(); save(); renderAll();
+    }
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
